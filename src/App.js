@@ -8,14 +8,56 @@ function App() {
   const [tableCards, setTableCards] = useState([]);
   const [player1Hand, setPlayer1Hand] = useState([]); // player1의 패 상태 저장
   const [player2Hand, setPlayer2Hand] = useState([]); // player2의 패 상태 저장
-  const [turn, setTurn] = useState('player1');
-  const [button, setButton] = useState('player1'); // 현재 버튼 플레이어 (초기값은 player1)
-  const [player1Bet, setPlayer1Bet] = useState(1); // 스몰 블라인드
-  const [player2Bet, setPlayer2Bet] = useState(2); // 빅 블라인드
+  const [turn, setTurn] = useState('null');
+  const [button, setButton] = useState('null'); // 현재 버튼 플레이어
+  const [player1Bet, setPlayer1Bet] = useState(0); // 스몰 블라인드
+  const [player2Bet, setPlayer2Bet] = useState(0); // 빅 블라인드
   const [player1Chips, setPlayer1Chips] = useState(10000 - 1); // 스몰 블라인드 반영
   const [player2Chips, setPlayer2Chips] = useState(10000 - 2); // 빅 블라인드 반영
-  const [player1InputBet, setPlayer1InputBet] = useState(player1Bet); // 플레이어 1의 입력값 상태
-  const [player2InputBet, setPlayer2InputBet] = useState(player2Bet); // 플레이어 2의 입력값 상태
+  const [player1InputBet, setPlayer1InputBet] = useState(0); // 플레이어 1의 입력값 상태
+  const [player2InputBet, setPlayer2InputBet] = useState(0); // 플레이어 2의 입력값 상태
+
+
+
+
+  useEffect(() => {
+    // 서버에서 기존 버튼 위치 삭제 (null 값으로 설정하여 삭제)
+    const buttonRef = ref(database, 'pokerGame/button');
+    set(buttonRef, null).then(() => {
+      // 랜덤으로 새로운 버튼 위치 설정
+      const randomButton = Math.random() < 0.5 ? 'player1' : 'player2';
+      setButton(randomButton);
+      set(ref(database, 'pokerGame/button'), randomButton);
+
+      // 버튼 위치에 따른 초기 블라인드 설정 및 서버 반영
+      const initialPlayer1Bet = randomButton === 'player1' ? 1 : 2;
+      const initialPlayer2Bet = randomButton === 'player1' ? 2 : 1;
+      setPlayer1Bet(initialPlayer1Bet);
+      setPlayer2Bet(initialPlayer2Bet);
+      setPlayer1InputBet(initialPlayer1Bet);
+      setPlayer2InputBet(initialPlayer2Bet);
+
+      // 칩 감소 처리
+      setPlayer1Chips(10000 - initialPlayer1Bet);
+      setPlayer2Chips(10000 - initialPlayer2Bet);
+
+      // Firebase에 플레이어 정보 저장
+      set(ref(database, 'pokerGame/players/player1'), {
+        hand: [],
+        chips: 10000 - initialPlayer1Bet,
+        bet: initialPlayer1Bet,
+      });
+      set(ref(database, 'pokerGame/players/player2'), {
+        hand: [],
+        chips: 10000 - initialPlayer2Bet,
+        bet: initialPlayer2Bet,
+      });
+
+      // 턴 초기화: 버튼 위치에 있는 플레이어에게 턴 부여 (스몰 블라인드가 먼저 행동)
+      set(ref(database, 'pokerGame/turn'), randomButton);
+      setTurn(randomButton);
+    });
+  }, []);
 
 
 
@@ -25,7 +67,7 @@ function App() {
     const player1Hand = deck.splice(0, 2);
     const player2Hand = deck.splice(0, 2);
   
-    // 초기 블라인드 설정에 따른 베팅 및 칩 감소
+    // 현재 버튼 위치에 따른 블라인드 초기화 및 칩 처리
     const initialPlayer1Bet = button === 'player1' ? 1 : 2;
     const initialPlayer2Bet = button === 'player1' ? 2 : 1;
   
@@ -46,6 +88,8 @@ function App() {
     setPlayer2Chips(10000 - initialPlayer2Bet);
     setPlayer1Bet(initialPlayer1Bet);
     setPlayer2Bet(initialPlayer2Bet);
+    setPlayer1InputBet(initialPlayer1Bet);
+    setPlayer2InputBet(initialPlayer2Bet);
     setDeck([...deck]);
   }
 
@@ -99,39 +143,6 @@ function App() {
       set(ref(database, 'pokerGame/turn'), 'player1');
     }
   }
-  
-  
-  
-
-
-
-  // Firebase에서 턴 값 실시간으로 가져오기
-  useEffect(() => {
-    // 서버에서 button 상태를 가져와 클라이언트와 동기화
-    const buttonRef = ref(database, 'pokerGame/button');
-    onValue(buttonRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const serverButton = snapshot.val();
-        if (serverButton !== button) {
-          setButton(serverButton);
-        }
-      }
-    });
-  
-    // 서버에서 turn 상태를 가져와 클라이언트와 동기화 됨
-    const turnRef = ref(database, 'pokerGame/turn');
-    onValue(turnRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const serverTurn = snapshot.val();
-        if (serverTurn !== turn) {
-          setTurn(serverTurn);
-        }
-      }
-    });
-  }, [button, turn]);
-  
-  
-
 
 
 
@@ -179,17 +190,13 @@ function App() {
     setButton(newButton);
   
     // 새로운 버튼에 따라 블라인드 베팅 초기화
-    if (newButton === 'player1') {
-      setPlayer1Bet(1);
-      setPlayer2Bet(2);
-      setPlayer1Chips((prevChips) => prevChips - 1);
-      setPlayer2Chips((prevChips) => prevChips - 2);
-    } else {
-      setPlayer1Bet(2);
-      setPlayer2Bet(1);
-      setPlayer1Chips((prevChips) => prevChips - 2);
-      setPlayer2Chips((prevChips) => prevChips - 1);
-    }
+    const initialPlayer1Bet = newButton === 'player1' ? 1 : 2;
+    const initialPlayer2Bet = newButton === 'player1' ? 2 : 1;
+
+    setPlayer1Bet(initialPlayer1Bet);
+    setPlayer2Bet(initialPlayer2Bet);
+    setPlayer1Chips((prevChips) => prevChips - initialPlayer1Bet);
+    setPlayer2Chips((prevChips) => prevChips - initialPlayer2Bet);
   
     // Firebase에 새로운 블라인드 값과 버튼 저장
     set(ref(database, 'pokerGame/players/player1/bet'), newButton === 'player1' ? 1 : 2);
@@ -197,6 +204,10 @@ function App() {
     set(ref(database, 'pokerGame/players/player1/chips'), button === 'player1' ? player1Chips - 1 : player1Chips - 2);
     set(ref(database, 'pokerGame/players/player2/chips'), button === 'player1' ? player2Chips - 2 : player2Chips - 1);
     set(ref(database, 'pokerGame/button'), newButton);
+
+    // 스몰 블라인드 플레이어에게 턴 부여
+    setTurn(newButton);
+    set(ref(database, 'pokerGame/turn'), newButton);
   }
 
 
@@ -234,6 +245,7 @@ function App() {
     // 턴 초기화: 버튼 위치에 있는 플레이어에게 턴 부여 (스몰 블라인드가 먼저 행동)
     const initialTurn = randomButton;
     set(ref(database, 'pokerGame/turn'), initialTurn);
+    setTurn(initialTurn);
   
     // 버튼 위치를 Firebase에 저장
     set(ref(database, 'pokerGame/button'), randomButton);
@@ -246,7 +258,6 @@ function App() {
     setPlayer1Hand([]);
     setPlayer2Hand([]);
     setTableCards([]);
-    setTurn(initialTurn);
   
     // 덱을 다시 섞어 초기화
     const newDeck = createDeck();
