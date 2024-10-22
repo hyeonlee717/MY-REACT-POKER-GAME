@@ -259,14 +259,15 @@ function App() {
 
   return (
     <div className="App">
-      <h1>1대1 포커 게임</h1><br />
-      <h2>버튼 포지션: {button === 'player1' ? '플레이어 1' : '플레이어 2'}</h2>
+      <h1>1대1 포커 게임</h1>
+      <button onClick={resetGame}>게임 리셋</button><br />
+      <h2>버튼 포지션 : {button === 'player1' ? '플레이어 1' : '플레이어 2'}</h2>
       <button onClick={dealStartingHands}>시작 패 나누기</button>
       <button onClick={revealFlop}>Flop 공개</button>
       <button onClick={revealTurn}>Turn 공개</button>
-      <button onClick={revealRiver}>River 공개</button>
+      <button onClick={revealRiver}>River 공개</button><br />
   
-      <h2>" 플레이어 1 "</h2>
+      <br /><br /><h2>" 플레이어 1 "</h2>
       <h2>칩 : {player1Chips}</h2>
       <input
       type="number"
@@ -287,7 +288,7 @@ function App() {
       <p>{player1Hand.map(renderCard).join(' / ')}</p>
       <h2>베팅 금액 : {player1Bet}</h2>
 
-      <h2>" 플레이어 2 "</h2>
+      <br /><br /><h2>" 플레이어 2 "</h2>
       <h2>칩 : {player2Chips}</h2>
       <input
       type="number"
@@ -308,11 +309,11 @@ function App() {
       <p>{player2Hand.map(renderCard).join(' / ')}</p>
       <h2>베팅 금액 : {player2Bet}</h2>
   
-      <h2>" 테이블 카드 "</h2>
+      <br /><br /><h2>" 테이블 카드 "</h2>
       {/* 기호와 숫자로 표현된 테이블 카드 */}
       <p>{tableCards.map(renderCard).join(' / ')}</p>
 
-      <button onClick={resetGame}>게임 리셋</button>
+      
     </div>
   );
 }
