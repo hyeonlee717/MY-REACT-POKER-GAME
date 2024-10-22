@@ -118,7 +118,7 @@ function App() {
       }
     });
   
-    // 서버에서 turn 상태를 가져와 클라이언트와 동기화
+    // 서버에서 turn 상태를 가져와 클라이언트와 동기화 됨
     const turnRef = ref(database, 'pokerGame/turn');
     onValue(turnRef, (snapshot) => {
       if (snapshot.exists()) {
