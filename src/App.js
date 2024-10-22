@@ -257,16 +257,15 @@ function App() {
   
   
 
-
   return (
     <div className="App">
-      <h1>1대1 포커 게임</h1>
+      <h1>1대1 포커 게임</h1><br />
       <h2>버튼 포지션: {button === 'player1' ? '플레이어 1' : '플레이어 2'}</h2>
       <button onClick={dealStartingHands}>시작 패 나누기</button>
       <button onClick={revealFlop}>Flop 공개</button>
       <button onClick={revealTurn}>Turn 공개</button>
       <button onClick={revealRiver}>River 공개</button>
-      
+  
       <h2>" 플레이어 1 "</h2>
       <h2>칩 : {player1Chips}</h2>
       <input
